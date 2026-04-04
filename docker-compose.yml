@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  osdh:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - OSDH_ENV=production
+      - OSDH_HOST=0.0.0.0
+      - OSDH_PORT=8080
+      - OSDH_DB_PATH=/app/data/osdh.db
+      - OSDH_SNAPSHOT_DIR=/app/data/snapshots
+      - OSDH_CACHE_DIR=/app/data/cache
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=phi3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

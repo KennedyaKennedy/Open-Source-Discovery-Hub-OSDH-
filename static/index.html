@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open-Source Discovery Hub</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Open-Source Discovery Hub</h1>
+            <p>Find useful, maintained open-source projects</p>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <aside class="sidebar">
+                <div class="filter-section">
+                    <h3>Filters</h3>
+                    <div class="filter-group">
+                        <label for="filter-source">Source Type</label>
+                        <select id="filter-source">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-language">Language</label>
+                        <select id="filter-language">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-license">License</label>
+                        <select id="filter-license">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-status">Maintenance</label>
+                        <select id="filter-status">
+                            <option value="">All</option>
+                            <option value="active">Active</option>
+                            <option value="maintained">Maintained</option>
+                            <option value="stale">Stale</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>
+                            <input type="checkbox" id="filter-archived"> Hide Archived
+                        </label>
+                    </div>
+                    <div class="filter-group">
+                        <label>
+                            <input type="checkbox" id="filter-duplicate" checked> Hide Duplicates
+                        </label>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-tags">Tags (comma-separated)</label>
+                        <input type="text" id="filter-tags" placeholder="python, web, cli">
+                    </div>
+                    <button id="apply-filters" class="btn btn-primary">Apply Filters</button>
+                    <button id="clear-filters" class="btn btn-secondary">Clear</button>
+                </div>
+
+                <div class="stats-section">
+                    <h3>Stats</h3>
+                    <div id="stats-content">
+                        <p>Loading...</p>
+                    </div>
+                </div>
+
+                <div class="actions-section">
+                    <h3>Actions</h3>
+                    <button id="aggregate-github" class="btn btn-secondary">Aggregate GitHub</button>
+                    <button id="aggregate-awesome" class="btn btn-secondary">Aggregate Awesome</button>
+                    <button id="aggregate-edu" class="btn btn-secondary">Aggregate Education</button>
+                    <button id="aggregate-all" class="btn btn-primary">Aggregate All</button>
+                    <button id="run-ai" class="btn btn-secondary">Run AI Processing</button>
+                    <button id="create-snapshot" class="btn btn-secondary">Create Snapshot</button>
+                </div>
+            </aside>
+
+            <section class="content">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search resources...">
+                    <select id="sort-by">
+                        <option value="last_updated">Last Updated</option>
+                        <option value="stars">Stars</option>
+                        <option value="name">Name</option>
+                        <option value="created_at">Created</option>
+                    </select>
+                    <select id="sort-order">
+                        <option value="desc">Descending</option>
+                        <option value="asc">Ascending</option>
+                    </select>
+                </div>
+
+                <div class="view-toggle">
+                    <button id="view-grid" class="btn btn-small active">Grid</button>
+                    <button id="view-list" class="btn btn-small">List</button>
+                    <button id="pagination-mode" class="btn btn-small">Mode: Pages</button>
+                </div>
+
+                <div id="results" class="results-grid"></div>
+
+                <div id="pagination" class="pagination">
+                    <button id="prev-page" class="btn btn-secondary" disabled>Previous</button>
+                    <span id="page-info">Page 1</span>
+                    <button id="next-page" class="btn btn-secondary" disabled>Next</button>
+                </div>
+
+                <div id="infinite-scroll" class="infinite-scroll" style="display:none;">
+                    <button id="load-more" class="btn btn-primary">Load More</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="modal-close" class="modal-close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
