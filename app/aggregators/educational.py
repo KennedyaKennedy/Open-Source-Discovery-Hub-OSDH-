@@ -127,7 +127,7 @@ async def aggregate_educational(
             "description": repo_info.get("description") or "",
             "readme": readme,
             "language": repo_info.get("language") or "",
-            "license": repo_info.get("license", {}).get("spdx_id") or "",
+            "license": (repo_info.get("license") or {}).get("spdx_id") or "",
             "topics": repo_info.get("topics") or [],
             "stars": repo_info.get("stargazers_count", 0),
             "forks": repo_info.get("forks_count", 0),
@@ -135,7 +135,7 @@ async def aggregate_educational(
                 repo_info["pushed_at"].replace("Z", "+00:00")
             ),
             "is_archived": repo_info.get("archived", False),
-            "metadata": {
+            "extra_metadata": {
                 "open_issues": repo_info.get("open_issues_count", 0),
                 "default_branch": repo_info.get("default_branch", ""),
                 "created_at": repo_info.get("created_at", ""),
@@ -152,6 +152,6 @@ async def aggregate_educational(
             db.add(new_resource)
             added += 1
 
-        db.commit()
+    db.commit()
 
     return found, added, updated

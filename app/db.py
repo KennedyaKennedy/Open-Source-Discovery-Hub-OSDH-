@@ -40,7 +40,7 @@ class Resource(Base):
     is_archived = Column(Boolean, default=False)
     is_duplicate = Column(Boolean, default=False)
     duplicate_of = Column(String, default="")
-    metadata = Column(JSON, default=dict)
+    extra_metadata = Column("metadata", JSON, default=dict)
 
 
 class Snapshot(Base):
@@ -51,7 +51,7 @@ class Snapshot(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     resource_count = Column(Integer, default=0)
     file_path = Column(String, default="")
-    metadata = Column(JSON, default=dict)
+    extra_metadata = Column("metadata", JSON, default=dict)
 
 
 class AggregationLog(Base):

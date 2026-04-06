@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, Path
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 import os
@@ -22,8 +22,8 @@ async def create_new_snapshot(
         "version": snapshot.version,
         "created_at": snapshot.created_at,
         "resource_count": snapshot.resource_count,
-        "file_paths": snapshot.metadata.get("filename", []),
-        "formats": snapshot.metadata.get("formats", []),
+        "file_paths": snapshot.extra_metadata.get("filename", []),
+        "formats": snapshot.extra_metadata.get("formats", []),
     }
 
 
@@ -36,14 +36,14 @@ async def list_available_snapshots(db: Session = Depends(get_db)):
 @router.get("/download/{snapshot_id}/{file_type}")
 async def download_snapshot(
     snapshot_id: str,
-    file_type: str = Query("json", pattern="^(json|csv|sqlite)$"),
+    file_type: str = Path(..., pattern="^(json|csv|sqlite)$"),
     db: Session = Depends(get_db),
 ):
     snap = db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
     if not snap:
         raise HTTPException(status_code=404, detail="Snapshot not found")
 
-    file_paths = snap.metadata.get("filename", [])
+    file_paths = snap.extra_metadata.get("filename", [])
     target_path = None
     media_type = "application/json"
     ext = f".{file_type}"
@@ -53,8 +53,15 @@ async def download_snapshot(
             target_path = fp
             break
 
-    if not target_path and file_type == "json":
-        target_path = snap.file_path
+    if not target_path:
+        if file_type == "json":
+            target_path = snap.file_path
+            if not target_path.endswith(".json"):
+                target_path = None
+        else:
+            target_path = snap.file_path
+            if not target_path.endswith(ext):
+                target_path = None
 
     if not target_path or not os.path.exists(target_path):
         raise HTTPException(status_code=404, detail="Snapshot file not found")

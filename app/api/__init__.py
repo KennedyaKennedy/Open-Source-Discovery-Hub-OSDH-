@@ -14,10 +14,13 @@ app.include_router(aggregate_router, prefix="/api/aggregate")
 app.include_router(snapshots_router, prefix="/api/snapshots")
 
 static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+if os.path.isdir(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 @app.get("/")
 async def index():
     index_path = os.path.join(static_dir, "index.html")
-    return FileResponse(index_path)
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Open-Source Discovery Hub", "version": "0.1.0"}

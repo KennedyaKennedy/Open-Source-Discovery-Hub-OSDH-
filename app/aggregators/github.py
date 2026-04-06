@@ -133,7 +133,7 @@ async def aggregate_github(
                 "description": item.get("description") or "",
                 "readme": readme,
                 "language": item.get("language") or "",
-                "license": item.get("license", {}).get("spdx_id") or "",
+                "license": (item.get("license") or {}).get("spdx_id") or "",
                 "topics": item.get("topics") or [],
                 "stars": item.get("stargazers_count", 0),
                 "forks": item.get("forks_count", 0),
@@ -141,7 +141,7 @@ async def aggregate_github(
                     item["pushed_at"].replace("Z", "+00:00")
                 ),
                 "is_archived": item.get("archived", False),
-                "metadata": {
+                "extra_metadata": {
                     "open_issues": item.get("open_issues_count", 0),
                     "default_branch": item.get("default_branch", ""),
                     "created_at": item.get("created_at", ""),
@@ -158,6 +158,6 @@ async def aggregate_github(
                 db.add(new_resource)
                 added += 1
 
-            db.commit()
+        db.commit()
 
     return found, added, updated

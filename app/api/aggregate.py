@@ -29,6 +29,8 @@ async def run_aggregation(
     db.add(log)
     db.commit()
 
+    found = added = updated = 0
+
     try:
         if request.source == "github":
             found, added, updated = await aggregate_github(
@@ -42,7 +44,6 @@ async def run_aggregation(
         elif request.source == "educational":
             found, added, updated = await aggregate_educational(db=db)
         elif request.source == "all":
-            found = added = updated = 0
             for aggregator in [
                 aggregate_github,
                 aggregate_awesome_lists,
@@ -63,16 +64,29 @@ async def run_aggregation(
                 added += a
                 updated += u
         else:
+            log.status = "failed"
+            log.error = f"Unknown source: {request.source}"
+            log.completed_at = datetime.now(timezone.utc)
+            db.commit()
             raise HTTPException(
                 status_code=400, detail=f"Unknown source: {request.source}"
             )
 
         log.status = "completed"
     except HTTPException:
+        log.resources_found = found
+        log.resources_added = added
+        log.resources_updated = updated
+        log.completed_at = datetime.now(timezone.utc)
+        db.commit()
         raise
     except Exception as e:
         log.status = "failed"
         log.error = str(e)
+        log.resources_found = found
+        log.resources_added = added
+        log.resources_updated = updated
+        log.completed_at = datetime.now(timezone.utc)
         db.commit()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -83,8 +97,6 @@ async def run_aggregation(
     db.commit()
 
     if request.run_ai and added > 0:
-        # Pass log_id only; process_ai_tasks creates its own DB session
-        # to avoid using the closed request session
         background_tasks.add_task(process_ai_tasks, None, log_id)
 
     return AggregateResponse(

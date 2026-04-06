@@ -5,7 +5,6 @@ from typing import List, Optional
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import String
-from sqlalchemy import String
 
 from app.config import settings
 from app.db import Resource
@@ -121,41 +120,11 @@ class OllamaClient:
 
             if days_since <= 30:
                 return "active"
-            if days_since > 365:
-                return "stale"
+            if days_since <= 180:
+                return "maintained"
+            return "stale"
 
         return "needs_ai_check"
-
-    async def classify_maintenance_ai(self, resource: Resource) -> str:
-        info = (
-            f"Name: {resource.name}\n"
-            f"Last updated: {resource.last_updated}\n"
-            f"Stars: {resource.stars}\n"
-            f"Forks: {resource.forks}\n"
-            f"Description: {resource.description}"
-        )
-
-        system = (
-            "You classify software project maintenance status into exactly one of: "
-            '"active", "maintained", "stale", "archived". '
-            "active: commits in last 30 days. "
-            "maintained: commits in last 6 months. "
-            "stale: no commits in 6+ months but not archived. "
-            "archived: explicitly archived by owner. "
-            "Return ONLY the status word, nothing else."
-        )
-
-        prompt = f"Classify maintenance status:\n\n{info}"
-
-        try:
-            result = await self._generate(prompt, system)
-            status = result.strip().lower().strip('"').strip()
-            if status in ["active", "maintained", "stale", "archived"]:
-                return status
-        except Exception as e:
-            logger.error(f"Classification failed: {e}")
-
-        return "unknown"
 
     async def detect_duplicate(
         self, resource: Resource, existing_resources: List[Resource]
@@ -216,15 +185,16 @@ async def process_ai_tasks(
     try:
         logger.info("Starting AI processing tasks")
 
-        # Use JSON column comparison that works with SQLite's TEXT storage
-        query = db.query(Resource).filter(
-            Resource.readme_summary == "",
-            Resource.maintenance_status == "unknown",
-        )
+        # Find resources needing ANY AI task (OR logic)
+        from sqlalchemy import or_
 
-        # For ai_tags, check both empty list representations
-        # SQLite stores JSON as TEXT, so we check for both "[]" and empty
-        query = query.filter(Resource.ai_tags.cast(String) == "[]")
+        query = db.query(Resource).filter(
+            or_(
+                Resource.readme_summary == "",
+                Resource.ai_tags.cast(String) == "[]",
+                Resource.maintenance_status == "unknown",
+            )
+        )
 
         if resource_ids:
             query = query.filter(Resource.id.in_(resource_ids))
@@ -238,6 +208,7 @@ async def process_ai_tasks(
                     resource.readme_summary = await ollama_client.summarize_readme(
                         resource.id, resource.readme
                     )
+                    db.commit()
 
                 if not resource.ai_tags or resource.ai_tags == []:
                     resource.ai_tags = await ollama_client.extract_tags(
@@ -247,6 +218,7 @@ async def process_ai_tasks(
                         resource.topics or [],
                         resource.readme[:2000] if resource.readme else "",
                     )
+                    db.commit()
 
                 if resource.maintenance_status == "unknown":
                     hybrid_result = ollama_client.classify_maintenance_hybrid(resource)
@@ -256,8 +228,8 @@ async def process_ai_tasks(
                         )
                     else:
                         resource.maintenance_status = hybrid_result
+                    db.commit()
 
-                db.commit()
                 logger.info(f"Processed AI tasks for: {resource.name}")
 
             except Exception as e:

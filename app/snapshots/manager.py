@@ -132,7 +132,7 @@ async def create_snapshot(db: Session, format: str = "json") -> Snapshot:
         file_path=file_paths.get(
             "json", file_paths.get("csv", file_paths.get("sqlite", ""))
         ),
-        metadata={
+        extra_metadata={
             "filename": list(file_paths.values()),
             "formats": list(file_paths.keys()),
         },
@@ -152,7 +152,7 @@ def list_snapshots(db: Session) -> List[Dict[str, Any]]:
             "created_at": s.created_at,
             "resource_count": s.resource_count,
             "file_path": s.file_path,
-            "metadata": s.metadata,
+            "metadata": s.extra_metadata,
         }
         for s in snapshots
     ]
@@ -163,10 +163,24 @@ async def load_snapshot(db: Session, snapshot_id: str) -> Dict[str, Any]:
     if not snapshot:
         return {"error": "Snapshot not found"}
 
-    if not os.path.exists(snapshot.file_path):
+    file_paths = snapshot.extra_metadata.get("filename", [])
+
+    json_path = None
+    for fp in file_paths:
+        if fp.endswith(".json"):
+            json_path = fp
+            break
+
+    if not json_path:
+        json_path = snapshot.file_path
+
+    if not json_path or not json_path.endswith(".json"):
+        return {"error": "Snapshot has no JSON export"}
+
+    if not os.path.exists(json_path):
         return {"error": "Snapshot file not found"}
 
-    with open(snapshot.file_path, "r", encoding="utf-8") as f:
+    with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     return data
